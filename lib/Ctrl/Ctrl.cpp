@@ -15,32 +15,27 @@ Encoder::Encoder(uint8_t stable_state, uint8_t l_pin, uint8_t r_pin) {
   this->negative_tick = false;
 }
 
-void Encoder::listen(Encoder_Handler callback) {
+void Encoder::listen() {
   static Encoder_Event event;
 
   this->read();
 
-  if (this->positive_tick) {
-    event.positive_tick = true;
-    event.negative_tick = false;
+  if (this->tick) {
+    event.positive_tick = this->positive_tick;
+    event.negative_tick = this->negative_tick;
 
-    callback(event);
-
-    return;
-  }
-
-  if (this->negative_tick) {
-    event.positive_tick = false;
-    event.negative_tick = true;
-
-    callback(event);
-
-    return;
+    if (this->handlers.rotate) {
+      this->handlers.rotate(&event);
+    }
   }
 }
 
-void Encoder::on(char *event_name, Encoder_Handler callback) {
-  // this->handlers.rotate = callback;
+void Encoder::on(const char *event_name, Encoder_Handler callback) {
+  if (strcmp(event_name, "rotate") == 0) {
+    this->handlers.rotate = callback;
+
+    return;
+  }
 }
 
 uint8_t Encoder::get_new_state() {

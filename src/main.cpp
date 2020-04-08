@@ -5,7 +5,7 @@
 #define PIN_B 3
 #define ENC_STABLE_STATE 0x03
 
-void handleRotate(ctrl::Encoder_Event);
+void handleRotate(ctrl::Encoder_Event const *);
 
 ctrl::Encoder enc(ENC_STABLE_STATE, PIN_A, PIN_B);
 
@@ -15,18 +15,20 @@ void setup() {
 
   Serial.begin(115200);
   Serial.println("Starting...");
+
+  enc.on("rotate", handleRotate);
 }
 
-void loop() { enc.listen(handleRotate); }
+void loop() { enc.listen(); }
 
-void handleRotate(ctrl::Encoder_Event event) {
+void handleRotate(ctrl::Encoder_Event const *event) {
   static uint16_t counter = 0;
 
-  if (event.positive_tick) {
+  if (event->positive_tick) {
     Serial.println("Counter: " + String(++counter));
   }
 
-  if (event.negative_tick && counter > 0) {
+  if (event->negative_tick && counter > 0) {
     Serial.println("Counter: " + String(--counter));
   }
 }
