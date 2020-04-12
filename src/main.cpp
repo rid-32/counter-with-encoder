@@ -1,34 +1,49 @@
 #include <Arduino.h>
 #include <Ctrl.h>
 
-#define PIN_A 2
-#define PIN_B 3
+#define ENC_LEFT_PIN 2
+#define ENC_RIGHT_PIN 3
 #define ENC_STABLE_STATE 0x03
+#define BUTTON 4
 
-void handleRotate(ctrl::Encoder_Event const *);
+void handle_rotate(ctrl::Encoder_Event const *);
+void handle_click(ctrl::Button_Event const *);
 
-ctrl::Encoder enc(ENC_STABLE_STATE, PIN_A, PIN_B);
+ctrl::Encoder enc(ENC_STABLE_STATE, ENC_LEFT_PIN, ENC_RIGHT_PIN);
+ctrl::Button btn(HIGH, BUTTON);
 
 void setup() {
-  pinMode(PIN_A, INPUT_PULLUP);
-  pinMode(PIN_B, INPUT_PULLUP);
-
   Serial.begin(115200);
-  Serial.println("Starting...");
 
-  enc.on("rotate", handleRotate);
+  pinMode(ENC_LEFT_PIN, INPUT_PULLUP);
+  pinMode(ENC_RIGHT_PIN, INPUT_PULLUP);
+  pinMode(BUTTON, INPUT_PULLUP);
+
+  enc.on("rotate", handle_rotate);
+  btn.on("click", handle_click);
 }
 
-void loop() { enc.listen(); }
+void loop() {
+  enc.listen();
+  btn.listen();
+}
 
-void handleRotate(ctrl::Encoder_Event const *event) {
+void handle_rotate(ctrl::Encoder_Event const *event) {
   static uint16_t counter = 0;
 
   if (event->positive_tick) {
-    Serial.println("Counter: " + String(++counter));
+    ++counter;
   }
 
   if (event->negative_tick && counter > 0) {
-    Serial.println("Counter: " + String(--counter));
+    --counter;
   }
+
+  Serial.println("Counter: " + String(counter));
+}
+
+void handle_click(ctrl::Button_Event const *event) {
+  static uint8_t counter = 0;
+
+  Serial.println("Button Counter: " + String(++counter));
 }

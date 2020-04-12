@@ -1,5 +1,8 @@
 #include <Arduino.h>
 
+#define DEBOUNCE_TIMEOUT 50
+#define LONG_KEYDOWN_TIMEOUT 750
+
 #ifndef CTRL
 #define CTRL
 
@@ -37,6 +40,32 @@ public:
 
   void listen();
   void on(const char *event_name, Encoder_Handler);
+};
+
+struct Button_Event {
+  uint8_t target;
+};
+
+typedef void (*Button_Handler)(Button_Event const *);
+
+struct Button_Handlers {
+  Button_Handler keydown;
+  Button_Handler longkeydown;
+  Button_Handler keyup;
+};
+
+class Button {
+private:
+  uint8_t pin;
+  bool stable_state, prev_state, is_long_pressed;
+  Button_Handlers handlers;
+  Button_Event event;
+
+public:
+  Button(bool, uint8_t);
+
+  void listen();
+  void on(char const *, Button_Handler);
 };
 } // namespace ctrl
 
