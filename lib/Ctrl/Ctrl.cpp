@@ -125,42 +125,29 @@ Button::Button(bool stable_state, uint8_t pin) {
   this->event.target = pin;
   this->stable_state = stable_state;
   this->prev_state = stable_state;
-  this->is_long_pressed = false;
+  this->is_pressed = false;
 }
 
 void Button::listen() {
-  static uint32_t lastTimestamp = 0;
+  static uint32_t last_timestamp = 0;
   const bool state = digitalRead(this->pin);
-  uint32_t currTimestamp = millis();
-  bool isDebounce = (currTimestamp - lastTimestamp) < DEBOUNCE_TIMEOUT;
-  bool isLongKeydown = (currTimestamp - lastTimestamp) >= LONG_KEYDOWN_TIMEOUT;
+  uint32_t curr_timestamp = millis();
+  bool is_debounce = (curr_timestamp - last_timestamp) < DEBOUNCE_TIMEOUT;
 
-  if (state == this->prev_state || isDebounce) {
-    if (this->is_long_pressed && isLongKeydown && this->handlers.longkeydown) {
-      this->handlers.longkeydown(&this->event);
+  if (is_debounce) {
+    return;
+  }
 
-      this->is_long_pressed = false;
-    }
+  if (state == this->prev_state) {
+    this->handle_same_state(curr_timestamp - last_timestamp);
 
     return;
   }
 
-  lastTimestamp = currTimestamp;
+  last_timestamp = curr_timestamp;
   this->prev_state = state;
 
-  if (state == this->stable_state) {
-    this->is_long_pressed = false;
-
-    if (this->handlers.keyup) {
-      this->handlers.keyup(&this->event);
-    }
-  } else {
-    this->is_long_pressed = true;
-
-    if (this->handlers.keydown) {
-      this->handlers.keydown(&this->event);
-    }
-  }
+  this->handle_new_state(state);
 }
 
 void Button::on(char const *event_name, Button_Handler handler) {
@@ -170,7 +157,7 @@ void Button::on(char const *event_name, Button_Handler handler) {
     return;
   }
 
-  if (strcmp(event_name, "longkeydown")) {
+  if (strcmp(event_name, "longkeydown") == 0) {
     this->handlers.longkeydown = handler;
 
     return;
@@ -180,5 +167,33 @@ void Button::on(char const *event_name, Button_Handler handler) {
     this->handlers.keyup = handler;
 
     return;
+  }
+}
+
+void Button::handle_same_state(uint32_t time) {
+  bool is_longkeydown = time >= LONG_KEYDOWN_TIMEOUT;
+
+  if (this->is_pressed && is_longkeydown && this->handlers.longkeydown) {
+    this->handlers.longkeydown(&this->event);
+
+    // its not semantic, but it should be cleared after longkeydown
+    // but if it starts to interfere it shout be replaced by semantic variable
+    this->is_pressed = false;
+  }
+}
+
+void Button::handle_new_state(bool state) {
+  if (state == this->stable_state) {
+    this->is_pressed = false;
+
+    if (this->handlers.keyup) {
+      this->handlers.keyup(&this->event);
+    }
+  } else {
+    this->is_pressed = true;
+
+    if (this->handlers.keydown) {
+      this->handlers.keydown(&this->event);
+    }
   }
 }

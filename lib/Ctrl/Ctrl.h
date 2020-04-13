@@ -57,9 +57,12 @@ struct Button_Handlers {
 class Button {
 private:
   uint8_t pin;
-  bool stable_state, prev_state, is_long_pressed;
+  bool stable_state, prev_state, is_pressed;
   Button_Handlers handlers;
   Button_Event event;
+
+  void handle_same_state(uint32_t);
+  void handle_new_state(bool);
 
 public:
   Button(bool, uint8_t);
